@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Data Entry Retur Barang (Cloud Sync)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        /* Animasi & Gaya tambahan */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        .animate-slide-in {
+            animation: slideIn 0.4s ease-out forwards;
+        }
+        .animate-scale-in {
+            animation: scaleIn 0.3s ease-out forwards;
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .btn-glow {
+            transition: all 0.3s ease;
+        }
+        .btn-glow:hover {
+            animation: pulseGlow 1.5s infinite;
+        }
+        
+        .shimmer-bg {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        #reader {
+            width: 100% !important;
+            border: none !important;
+            background: #111827;
+            position: relative;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        #reader video {
+            width: 100% !important;
+            height: auto !important;
+            object-fit: cover !important;
+            border-radius: 0.75rem;
+        }
+        
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid rgba(99, 102, 241, 0.5);
+            border-radius: 0.75rem;
+            pointer-events: none;
+            animation: pulseGlow 2s infinite;
+        }
+        
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2px;
+            border-radius: 1rem;
+        }
+        .gradient-border > * {
+            background: white;
+            border-radius: 0.9rem;
+        }
+        
+        .badge-pulse {
+            animation: pulseGlow 2s infinite;
+        }
+        
+        .row-hover {
+            transition: all 0.2s ease;
+        }
+        .row-hover:hover {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.05) 0%, transparent 100%);
+            transform: scale(1.01);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #818cf8;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+
+        /* Tabel styling */
+        .table-wrapper {
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+        
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 0.5rem;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-indigo-50/30 font-sans min-h-screen text-gray-800">
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in-up">
+        
+        <!-- Header dengan efek glass -->
+        <header class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-effect p-6 rounded-2xl shadow-xl border border-white/50 backdrop-blur-lg card-hover">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg animate-float">
+                    <span class="text-2xl">🚀</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        ReturEntry Pro Cloud
+                    </h1>
+                    <p class="text-sm text-gray-500">Aplikasi Data Entry & Scanning Retur - Terhubung Google Sheets</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-xs font-semibold px-4 py-2 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 shadow-sm flex items-center gap-2">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    Status: <span id="app-status" class="text-amber-600 font-bold">Menghubungkan ke Cloud...</span>
+                </span>
+                <button id="btn-clear-all" class="hidden bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-600 px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105">
+                    <span class="flex items-center gap-1">🔄 Reset Semua Data</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Kolom Kiri -->
+            <div class="lg:col-span-1 flex flex-col gap-6">
+                
+                <!-- Card Master Data -->
+                <div class="bg-white/90 backdrop-blur-sm p-5 rounded-2xl shadow-xl border border-white/50 card-hover animate-slide-in">
+                    <h2 class="text-md font-bold mb-1 flex items-center gap-2 text-gray-700">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white shadow-md">1</span>
+                        Master Data Produk
+                    </h2>
+                    <p class="text-xs text-gray-400 mb-3">Data otomatis dimuat dari Google Sheets. Gunakan tombol di bawah jika ingin offline/manual.</p>
+                    <div class="relative">
+                        <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" 
+                            class="block w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-indigo-50 file:to-purple-50 file:text-indigo-700 hover:file:from-indigo-100 hover:file:to-purple-100 cursor-pointer transition-all duration-300"/>
+                        <div class="absolute inset-0 pointer-events-none rounded-xl border-2 border-dashed border-indigo-200 opacity-50"></div>
+                    </div>
+                    <div id="status-master-load" class="text-xs text-green-600 font-medium mt-2 hidden">
+                        <span class="flex items-center gap-1">✅ <span id="total-items">0</span> produk aktif.</span>
+                    </div>
+                </div>
+
+                <!-- Card Scanner -->
+                <div id="interaction-section" class="bg-white/90 backdrop-blur-sm p-5 rounded-2xl shadow-xl border border-white/50 opacity-40 pointer-events-none transition-all duration-500 card-hover">
+                    <h2 class="text-md font-bold mb-3 flex items-center gap-2 text-gray-700">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white shadow-md">2</span>
+                        Scan / Cari Produk
+                    </h2>
+                    
+                    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 mb-4 aspect-video flex items-center justify-center border-2 border-indigo-500/30 shadow-lg">
+                        <div id="reader" class="w-full"></div>
+                        <div class="scan-overlay"></div>
+                        <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
+                            📷 Arahkan ke Barcode
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <input type="text" id="manual-barcode" placeholder="Masukkan Barcode / PLU..." 
+                                class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 text-sm transition-all duration-300 bg-white/50 backdrop-blur-sm">
+                            <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs">⌨️</span>
+                        </div>
+                        <button id="btn-lookup" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 btn-glow flex items-center gap-2">
+                            🔍 Cari
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Kolom Kanan -->
+            <div class="lg:col-span-2 flex flex-col gap-6">
+                
+                <!-- Form Entry -->
+                <div id="entry-form-section" class="hidden bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-white/50 card-hover animate-scale-in">
+                    <h2 class="text-md font-bold mb-4 text-indigo-600 flex items-center gap-2">
+                        <span class="text-xl">📥</span> Form Input Data Retur
+                        <span class="ml-auto text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">✨ Siap Input</span>
+                    </h2>
+                    
+                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-100 mb-4 grid grid-cols-2 gap-3 text-xs">
+                        <div class="animate-slide-in" style="animation-delay: 0.1s">
+                            <span class="text-gray-500 block text-xs">📦 Deskripsi Produk:</span>
+                            <span id="entry-descp" class="font-bold text-sm text-gray-900">-</span>
+                        </div>
+                        <div class="animate-slide-in" style="animation-delay: 0.2s">
+                            <span class="text-gray-500 block text-xs">🔢 Kode PLU:</span>
+                            <span id="entry-plu" class="font-mono font-bold text-sm text-gray-900 bg-white px-2 py-0.5 rounded">-</span>
+                        </div>
+                        <div class="animate-slide-in" style="animation-delay: 0.3s">
+                            <span class="text-gray-500 block text-xs">📱 Barcode:</span>
+                            <span id="entry-barcode" class="font-mono text-gray-600 bg-white px-2 py-0.5 rounded">-</span>
+                        </div>
+                        <div class="animate-slide-in" style="animation-delay: 0.4s">
+                            <span class="text-gray-500 block text-xs">🏷️ Kategori / Harga:</span>
+                            <span id="entry-info" class="text-gray-600 bg-white px-2 py-0.5 rounded">-</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">
+                                📊 Jumlah Qty Retur <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" id="retur-qty" min="1" placeholder="Contoh: 10"
+                                class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 text-sm transition-all duration-300 bg-white/50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">
+                                📅 Tanggal Kedaluwarsa <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="retur-exp" 
+                                class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 text-sm transition-all duration-300 bg-white/50">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button id="btn-cancel-entry" class="px-5 py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-300">
+                            Batal
+                        </button>
+                        <button id="btn-save-entry" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center gap-2 btn-glow">
+                            ✚ Tambahkan ke Daftar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabel Retur -->
+                <div class="bg-white/90 backdrop-blur-sm p-5 rounded-2xl shadow-xl border border-white/50 flex-1 flex flex-col card-hover">
+                    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                        <div>
+                            <h2 class="text-md font-bold text-gray-700 flex items-center gap-2">
+                                📋 Daftar Item Siap Retur
+                                <span id="retur-count" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">0</span>
+                            </h2>
+                            <p class="text-xs text-gray-400">Data di bawah ini akan di-export ke laporan Excel.</p>
+                        </div>
+                        <button id="btn-export" class="hidden bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center gap-2 btn-glow">
+                            📊 Export Excel
+                        </button>
+                    </div>
+
+                    <div class="table-wrapper flex-1 min-h-[200px]">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 border-b-2 border-gray-200">
+                                    <th class="p-3 font-semibold uppercase tracking-wider">PLU</th>
+                                    <th class="p-3 font-semibold uppercase tracking-wider">Barcode</th>
+                                    <th class="p-3 font-semibold uppercase tracking-wider">Deskripsi Produk</th>
+                                    <th class="p-3 font-semibold uppercase tracking-wider text-center">Qty</th>
+                                    <th class="p-3 font-semibold uppercase tracking-wider">Tgl Expired</th>
+                                    <th class="p-3 font-semibold uppercase tracking-wider text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="retur-table-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="6" class="p-8 text-center text-gray-400 italic bg-gray-50/50">
+                                        <span class="text-4xl block mb-2">📭</span>
+                                        Belum ada item yang ditambahkan.<br>
+                                        <span class="text-xs">Silakan scan barcode produk untuk memulai</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =================================================================
+        // GANTI BAGIAN INI DENGAN ID GOOGLE SHEETS KAMU YANG SUDAH DI-SHARE
+        // =================================================================
+        const SPREADSHEET_ID = "18aui0vuuOVN4nxmLmUHqqe-y4PSrsr9ezfn7qjuOhb8";
+        // =================================================================
+
+        let masterData = []; 
+        let returList = [];  
+        let currentActiveProduct = null;
+        let html5QrcodeInstance = null;
+
+        // Elemen-elemen DOM
+        const excelInput = document.getElementById('excel-file');
+        const statusMasterLoad = document.getElementById('status-master-load');
+        const totalItems = document.getElementById('total-items');
+        const interactionSection = document.getElementById('interaction-section');
+        const appStatus = document.getElementById('app-status');
+        const btnClearAll = document.getElementById('btn-clear-all');
+        const manualBarcode = document.getElementById('manual-barcode');
+        const btnLookup = document.getElementById('btn-lookup');
+        const returCount = document.getElementById('retur-count');
+        
+        const entryFormSection = document.getElementById('entry-form-section');
+        const entryDescp = document.getElementById('entry-descp');
+        const entryPlu = document.getElementById('entry-plu');
+        const entryBarcode = document.getElementById('entry-barcode');
+        const entryInfo = document.getElementById('entry-info');
+        const returQty = document.getElementById('retur-qty');
+        const returExp = document.getElementById('retur-exp');
+        const btnSaveEntry = document.getElementById('btn-save-entry');
+        const btnCancelEntry = document.getElementById('btn-cancel-entry');
+
+        const returTableBody = document.getElementById('retur-table-body');
+        const btnExport = document.getElementById('btn-export');
+
+        // --- AMBIL DATA OTOMATIS DARI GOOGLE SHEETS ---
+        window.addEventListener('DOMContentLoaded', () => {
+            if (SPREADSHEET_ID === "MASUKKAN_ID_GOOGLE_SHEETS_KAMU_DISINI" || SPREADSHEET_ID === "") {
+                appStatus.innerText = "⚠️ Belum Ada Master Data (Ganti ID Sheets)";
+                appStatus.className = "text-red-500 font-bold";
+                return;
+            }
+
+            const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error("Gagal mengambil data dari Google Sheets");
+                    return response.arrayBuffer();
+                })
+                .then(buffer => {
+                    const data = new Uint8Array(buffer);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rawData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    prosesDataSukses(rawData, "Cloud (Google Sheets)");
+                })
+                .catch(error => {
+                    console.error(error);
+                    appStatus.innerText = "⚠️ Gagal Sinkronisasi Cloud (Offline Mode)";
+                    appStatus.className = "text-red-500 font-bold";
+                    alert("Gagal memuat otomatis dari Google Sheets. Silakan upload file Excel manual.");
+                });
+        });
+
+        // --- PROSES BACA EXCEL MANUAL ---
+        excelInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rawData = XLSX.utils.sheet_to_json(worksheet);
+
+                    prosesDataSukses(rawData, "Lokal (Upload Manual)");
+                } catch (error) {
+                    console.error(error);
+                    alert('Terjadi kesalahan saat membaca file Excel: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function prosesDataSukses(rawData, sumber) {
+            if(rawData.length === 0) {
+                alert('Data produk kosong!');
+                return;
+            }
+
+            masterData = rawData.map(row => {
+                const normalizedRow = {};
+                for (let key in row) {
+                    const lowerKey = key.trim().toLowerCase();
+                    if (lowerKey === 'plu' || lowerKey === 'kode plu' || lowerKey === 'kode_plu') {
+                        normalizedRow.plu = row[key];
+                    } else if (lowerKey === 'barcode' || lowerKey === 'no_barcode' || lowerKey === 'no barcode') {
+                        normalizedRow.barcode = row[key];
+                    } else if (lowerKey === 'descp' || lowerKey === 'deskripsi' || lowerKey === 'nama barang' || lowerKey === 'nama_barang') {
+                        normalizedRow.descp = row[key];
+                    } else if (lowerKey === 'price1' || lowerKey === 'harga' || lowerKey === 'price') {
+                        normalizedRow.price1 = row[key];
+                    } else if (lowerKey === 'kategori' || lowerKey === 'category') {
+                        normalizedRow.kategori = row[key];
+                    }
+                }
+                return normalizedRow;
+            });
+
+            if(masterData.length > 0 && (masterData[0].barcode || masterData[0].plu)) {
+                totalItems.innerText = masterData.length;
+                statusMasterLoad.classList.remove('hidden');
+                interactionSection.classList.remove('opacity-40', 'pointer-events-none');
+                excelInput.disabled = true;
+                
+                appStatus.innerText = `✅ Dashboard Aktif [${sumber}]`;
+                appStatus.className = "text-green-600 font-bold";
+                btnClearAll.classList.remove('hidden');
+                
+                startScanner();
+            } else {
+                alert('Gagal memetakan data. Pastikan kolom judul bernamakan PLU, Barcode, dan Deskripsi.');
+            }
+        }
+
+        // --- SCANNER ---
+        function startScanner() {
+            if (html5QrcodeInstance) {
+                html5QrcodeInstance.stop().catch(() => {});
+            }
+
+            html5QrcodeInstance = new Html5Qrcode("reader");
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 150 }
+            };
+
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length > 0) {
+                    let targetCameraId = devices[0].id;
+                    for (let i = 0; i < devices.length; i++) {
+                        const label = devices[i].label.toLowerCase();
+                        if (label.includes('back') || label.includes('rear') || label.includes('belakang') || label.includes('environment')) {
+                            targetCameraId = devices[i].id;
+                            break;
+                        }
+                    }
+                    html5QrcodeInstance.start(targetCameraId, config, onScanSuccess, onScanFailure)
+                        .catch(() => fallbackDefaultCamera(config));
+                } else {
+                    fallbackDefaultCamera(config);
+                }
+            }).catch(() => fallbackDefaultCamera(config));
+        }
+
+        function fallbackDefaultCamera(config) {
+            html5QrcodeInstance.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+                .catch(err => {
+                    document.getElementById('reader').innerHTML = `
+                        <div class="text-center p-4 text-xs text-red-400 font-medium bg-red-900/20">
+                            ⚠️ Gagal mengaktifkan kamera: ${err.message || 'Izin Diblokir'}<br>
+                            Silakan gunakan input manual di bawah.
+                        </div>
+                    `;
+                });
+        }
+
+        function onScanSuccess(decodedText) {
+            handleProductLookup(decodedText);
+            if (navigator.vibrate) navigator.vibrate(100);
+        }
+
+        function onScanFailure(error) {}
+
+        // --- LOOKUP ---
+        function handleProductLookup(barcodeOrPlu) {
+            const searchKey = String(barcodeOrPlu).trim().toLowerCase();
+            const product = masterData.find(item => {
+                const itemBarcode = item.barcode ? String(item.barcode).trim().toLowerCase() : '';
+                const itemPlu = item.plu ? String(item.plu).trim().toLowerCase() : '';
+                return itemBarcode === searchKey || itemPlu === searchKey;
+            });
+
+            if(product) {
+                currentActiveProduct = product;
+                entryFormSection.classList.remove('hidden');
+                entryFormSection.style.animation = 'none';
+                setTimeout(() => entryFormSection.style.animation = 'scaleIn 0.3s ease-out forwards', 10);
+                
+                entryDescp.innerText = product.descp || 'Tanpa Deskripsi';
+                entryPlu.innerText = product.plu || '-';
+                entryBarcode.innerText = product.barcode || '-';
+                
+                const harga = !isNaN(product.price1) ? 'Rp ' + Number(product.price1).toLocaleString('id-ID') : (product.price1 || '0');
+                entryInfo.innerText = `${product.kategori || 'Umum'} / ${harga}`;
+                
+                returQty.value = '';
+                returExp.value = '';
+                returQty.focus();
+                entryFormSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                alert(`❌ Produk dengan Barcode/PLU "${barcodeOrPlu}" tidak ditemukan.`);
+            }
+        }
+
+        btnLookup.addEventListener('click', () => {
+            if(manualBarcode.value.trim() !== "") handleProductLookup(manualBarcode.value);
+        });
+        manualBarcode.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter' && manualBarcode.value.trim() !== "") handleProductLookup(manualBarcode.value);
+        });
+        btnCancelEntry.addEventListener('click', () => {
+            entryFormSection.classList.add('hidden');
+            currentActiveProduct = null;
+        });
+
+        // --- SAVE ---
+        btnSaveEntry.addEventListener('click', () => {
+            const qty = parseInt(returQty.value);
+            const expiredDate = returExp.value;
+
+            if(!qty || qty <= 0) { 
+                alert('⚠️ Isi Qty minimal 1!'); 
+                returQty.focus(); 
+                returQty.style.borderColor = '#ef4444';
+                setTimeout(() => returQty.style.borderColor = '', 2000);
+                return; 
+            }
+            if(!expiredDate) { 
+                alert('⚠️ Isi tanggal kedaluwarsa!'); 
+                returExp.focus();
+                returExp.style.borderColor = '#ef4444';
+                setTimeout(() => returExp.style.borderColor = '', 2000);
+                return; 
+            }
+
+            returList.push({
+                plu: currentActiveProduct.plu,
+                barcode: currentActiveProduct.barcode,
+                descp: currentActiveProduct.descp,
+                qty_retur: qty,
+                tgl_expired: expiredDate
+            });
+            
+            renderReturTable();
+            entryFormSection.classList.add('hidden');
+            manualBarcode.value = '';
+            currentActiveProduct = null;
+            
+            // Feedback animasi
+            const saveBtn = btnSaveEntry;
+            saveBtn.textContent = '✅ Tersimpan!';
+            setTimeout(() => saveBtn.innerHTML = '✚ Tambahkan ke Daftar', 1500);
+        });
+
+        function renderReturTable() {
+            returCount.textContent = returList.length;
+            
+            if(returList.length === 0) {
+                returTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-gray-400 italic bg-gray-50/50">
+                            <span class="text-4xl block mb-2">📭</span>
+                            Belum ada item ditambahkan.<br>
+                            <span class="text-xs">Silakan scan produk untuk memulai</span>
+                        </td>
+                    </tr>
+                `;
+                btnExport.classList.add('hidden');
+                return;
+            }
+            btnExport.classList.remove('hidden');
+            returTableBody.innerHTML = '';
+            returList.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "row-hover transition-all duration-200";
+                tr.style.animation = `slideIn 0.3s ease-out forwards`;
+                tr.style.animationDelay = `${index * 0.05}s`;
+                tr.innerHTML = `
+                    <td class="p-3 font-mono text-gray-700">${item.plu || '-'}</td>
+                    <td class="p-3 font-mono text-gray-600">${item.barcode || '-'}</td>
+                    <td class="p-3 font-medium text-gray-900">${item.descp || '-'}</td>
+                    <td class="p-3 text-center font-bold text-indigo-600 text-sm">${item.qty_retur}</td>
+                    <td class="p-3 text-gray-600">${item.tgl_expired}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteReturItem(${index})" 
+                            class="text-red-500 hover:text-red-700 font-semibold transition-all duration-300 hover:scale-110 inline-flex items-center gap-1">
+                            🗑️ Hapus
+                        </button>
+                    </td>
+                `;
+                returTableBody.appendChild(tr);
+            });
+        }
+
+        function deleteReturItem(index) { 
+            returList.splice(index, 1); 
+            renderReturTable(); 
+        }
+
+        // --- EXPORT ---
+        btnExport.addEventListener('click', () => {
+            if(returList.length === 0) return;
+            const dataToExport = returList.map((item, idx) => ({
+                "No": idx + 1, 
+                "Kode PLU": item.plu, 
+                "Barcode": item.barcode, 
+                "Deskripsi Produk": item.descp, 
+                "Qty Retur": item.qty_retur, 
+                "Tanggal Kedaluwarsa (Expired)": item.tgl_expired
+            }));
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Retur Supplier");
+            const max_width = dataToExport.reduce((w, r) => Math.max(w, String(r["Deskripsi Produk"]).length), 20);
+            worksheet["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 18 }, { wch: max_width }, { wch: 12 }, { wch: 25 }];
+            const namaFile = `Laporan_Kerja_Retur_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, namaFile);
+        });
+
+        // --- RESET ---
+        btnClearAll.addEventListener('click', () => {
+            if(confirm('🔄 Reset semua data entry dari awal?')) {
+                location.reload();
+            }
+        });
+    </script>
+</body>
+</html>
