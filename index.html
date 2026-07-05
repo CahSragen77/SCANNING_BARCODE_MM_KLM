@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        /* Animasi & Gaya tambahan */
+        /* Animasi & Gaya tambahan (sama seperti sebelumnya) */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -155,6 +155,31 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
+
+        /* Style untuk pesan error kamera */
+        .camera-error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+        .camera-error-box .retry-btn {
+            background: #dc2626;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 0.5rem;
+        }
+        .camera-error-box .retry-btn:hover {
+            background: #b91c1c;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-indigo-50/30 font-sans min-h-screen text-gray-800">
@@ -217,11 +242,14 @@
                         Scan / Cari Produk
                     </h2>
                     
-                    <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 mb-4 aspect-video flex items-center justify-center border-2 border-indigo-500/30 shadow-lg">
+                    <!-- Tempat untuk menampilkan scanner atau pesan error -->
+                    <div id="scanner-container" class="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 mb-4 aspect-video flex items-center justify-center border-2 border-indigo-500/30 shadow-lg">
                         <div id="reader" class="w-full"></div>
                         <div class="scan-overlay"></div>
-                        <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
-                            📷 Arahkan ke Barcode
+                        <!-- Pesan default jika kamera belum aktif -->
+                        <div id="camera-status-msg" class="absolute inset-0 flex flex-col items-center justify-center text-white text-sm bg-black/50 backdrop-blur-sm">
+                            <span class="text-4xl mb-2">📷</span>
+                            <span>Mengaktifkan kamera...</span>
                         </div>
                     </div>
 
@@ -350,6 +378,7 @@
         let returList = [];  
         let currentActiveProduct = null;
         let html5QrcodeInstance = null;
+        let isScanning = false;
 
         // Elemen-elemen DOM
         const excelInput = document.getElementById('excel-file');
@@ -361,6 +390,8 @@
         const manualBarcode = document.getElementById('manual-barcode');
         const btnLookup = document.getElementById('btn-lookup');
         const returCount = document.getElementById('retur-count');
+        const scannerContainer = document.getElementById('scanner-container');
+        const cameraStatusMsg = document.getElementById('camera-status-msg');
         
         const entryFormSection = document.getElementById('entry-form-section');
         const entryDescp = document.getElementById('entry-descp');
@@ -375,8 +406,35 @@
         const returTableBody = document.getElementById('retur-table-body');
         const btnExport = document.getElementById('btn-export');
 
+        // --- CEK PROTOKOL HTTPS ---
+        function checkProtocol() {
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                const warningMsg = document.createElement('div');
+                warningMsg.className = 'camera-error-box mb-4';
+                warningMsg.innerHTML = `
+                    <strong>⚠️ Akses Kamera Diblokir</strong><br>
+                    <p class="text-sm mt-1">Browser memblokir kamera karena situs diakses melalui <strong>HTTP</strong>.<br>
+                    Silakan akses melalui <strong>HTTPS</strong> (misal: GitHub Pages, Vercel, Netlify) agar kamera berfungsi.</p>
+                    <p class="text-xs mt-2 text-gray-600">Untuk pengujian lokal, gunakan <strong>localhost</strong>.</p>
+                `;
+                // Sisipkan pesan di atas scanner
+                const readerDiv = document.getElementById('reader');
+                readerDiv.parentNode.insertBefore(warningMsg, readerDiv);
+                cameraStatusMsg.innerHTML = `
+                    <span class="text-4xl mb-2">🔒</span>
+                    <span class="font-bold">Kamera Tidak Tersedia</span>
+                    <span class="text-xs mt-1 opacity-75">Gunakan HTTPS untuk mengakses kamera</span>
+                `;
+                return false;
+            }
+            return true;
+        }
+
         // --- AMBIL DATA OTOMATIS DARI GOOGLE SHEETS ---
         window.addEventListener('DOMContentLoaded', () => {
+            // Cek protokol terlebih dahulu
+            const isSecure = checkProtocol();
+
             if (SPREADSHEET_ID === "MASUKKAN_ID_GOOGLE_SHEETS_KAMU_DISINI" || SPREADSHEET_ID === "") {
                 appStatus.innerText = "⚠️ Belum Ada Master Data (Ganti ID Sheets)";
                 appStatus.className = "text-red-500 font-bold";
@@ -465,27 +523,44 @@
                 appStatus.className = "text-green-600 font-bold";
                 btnClearAll.classList.remove('hidden');
                 
+                // Mulai scanner setelah data siap
                 startScanner();
             } else {
                 alert('Gagal memetakan data. Pastikan kolom judul bernamakan PLU, Barcode, dan Deskripsi.');
             }
         }
 
-        // --- 2. FITUR SCANNER KAMERA KOMPATIBILITAS MAKSIMAL ---
+        // --- SCANNER DENGAN PENANGANAN ERROR LEBIH BAIK ---
         function startScanner() {
+            // Hanya jalankan jika protokol aman atau localhost
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                return;
+            }
+
             if (html5QrcodeInstance) {
                 html5QrcodeInstance.stop().catch(() => {});
+                html5QrcodeInstance.clear();
             }
+
+            // Update status
+            cameraStatusMsg.innerHTML = `
+                <span class="text-4xl mb-2">📷</span>
+                <span>Mengakses kamera...</span>
+                <span class="text-xs mt-1 opacity-75">Mohon izinkan akses kamera</span>
+            `;
 
             html5QrcodeInstance = new Html5Qrcode("reader");
             const config = {
                 fps: 10,
-                qrbox: { width: 250, height: 150 }
+                qrbox: { width: 250, height: 150 },
+                aspectRatio: 1.0
             };
 
+            // Coba deteksi kamera
             Html5Qrcode.getCameras().then(devices => {
                 if (devices && devices.length > 0) {
                     let targetCameraId = devices[0].id;
+                    // Prioritaskan kamera belakang
                     for (let i = 0; i < devices.length; i++) {
                         const label = devices[i].label.toLowerCase();
                         if (label.includes('back') || label.includes('rear') || label.includes('belakang') || label.includes('environment')) {
@@ -494,31 +569,77 @@
                         }
                     }
                     html5QrcodeInstance.start(targetCameraId, config, onScanSuccess, onScanFailure)
-                        .catch(() => fallbackDefaultCamera(config));
+                        .then(() => {
+                            isScanning = true;
+                            cameraStatusMsg.style.display = 'none';
+                        })
+                        .catch((err) => {
+                            console.error('Gagal start kamera spesifik:', err);
+                            fallbackDefaultCamera(config);
+                        });
                 } else {
                     fallbackDefaultCamera(config);
                 }
-            }).catch(() => fallbackDefaultCamera(config));
+            }).catch((err) => {
+                console.error('Gagal get cameras:', err);
+                fallbackDefaultCamera(config);
+            });
         }
 
         function fallbackDefaultCamera(config) {
+            // Coba dengan facingMode environment
             html5QrcodeInstance.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
-                .catch(err => {
-                    document.getElementById('reader').innerHTML = `
-                        <div class="text-center p-4 text-xs text-red-500 font-medium">
-                            Gagal mengaktifkan kamera: ${err.message || 'Izin Diblokir'}<br>
-                            Silakan gunakan input manual di bawah.
-                        </div>
-                    `;
+                .then(() => {
+                    isScanning = true;
+                    cameraStatusMsg.style.display = 'none';
+                })
+                .catch((err) => {
+                    console.error('Gagal start kamera fallback:', err);
+                    // Tampilkan pesan error dan tombol retry
+                    showCameraError(err.message || 'Izin kamera ditolak atau kamera tidak tersedia');
                 });
+        }
+
+        function showCameraError(errorMessage) {
+            isScanning = false;
+            // Sembunyikan elemen reader, tampilkan pesan error
+            const readerDiv = document.getElementById('reader');
+            readerDiv.style.display = 'none';
+            
+            // Hapus status default
+            cameraStatusMsg.innerHTML = `
+                <span class="text-4xl mb-2">🚫</span>
+                <span class="font-bold text-red-400">Kamera Gagal Diakses</span>
+                <span class="text-xs mt-1 opacity-75">${errorMessage}</span>
+                <button id="retry-camera-btn" class="retry-btn mt-3">
+                    🔄 Coba Lagi
+                </button>
+                <span class="text-xs mt-2 opacity-50">Pastikan izin kamera diberikan di browser</span>
+            `;
+            cameraStatusMsg.style.display = 'flex';
+
+            // Event listener untuk tombol retry
+            document.getElementById('retry-camera-btn').addEventListener('click', function() {
+                // Reset tampilan
+                const readerDiv = document.getElementById('reader');
+                readerDiv.style.display = 'block';
+                cameraStatusMsg.innerHTML = `
+                    <span class="text-4xl mb-2">📷</span>
+                    <span>Mengaktifkan kamera...</span>
+                `;
+                // Coba start ulang
+                startScanner();
+            });
         }
 
         function onScanSuccess(decodedText) {
             handleProductLookup(decodedText);
-            if (navigator.vibrate) navigator.vibrate(100); 
+            if (navigator.vibrate) navigator.vibrate(100);
         }
 
-        function onScanFailure(error) {}
+        function onScanFailure(error) {
+            // Abaikan error scan biasa
+        }
 
         // --- LOOKUP ---
         function handleProductLookup(barcodeOrPlu) {
