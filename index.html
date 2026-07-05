@@ -471,7 +471,7 @@
             }
         }
 
-        // --- SCANNER ---
+        // --- 2. FITUR SCANNER KAMERA KOMPATIBILITAS MAKSIMAL ---
         function startScanner() {
             if (html5QrcodeInstance) {
                 html5QrcodeInstance.stop().catch(() => {});
@@ -505,8 +505,8 @@
             html5QrcodeInstance.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
                 .catch(err => {
                     document.getElementById('reader').innerHTML = `
-                        <div class="text-center p-4 text-xs text-red-400 font-medium bg-red-900/20">
-                            ⚠️ Gagal mengaktifkan kamera: ${err.message || 'Izin Diblokir'}<br>
+                        <div class="text-center p-4 text-xs text-red-500 font-medium">
+                            Gagal mengaktifkan kamera: ${err.message || 'Izin Diblokir'}<br>
                             Silakan gunakan input manual di bawah.
                         </div>
                     `;
@@ -515,7 +515,7 @@
 
         function onScanSuccess(decodedText) {
             handleProductLookup(decodedText);
-            if (navigator.vibrate) navigator.vibrate(100);
+            if (navigator.vibrate) navigator.vibrate(100); 
         }
 
         function onScanFailure(error) {}
