@@ -824,7 +824,7 @@ function handleProductLookup(barcodeOrPlu) {
 } else {
     alert(`❌ Produk dengan Barcode/PLU "${barcodeOrPlu}" tidak ditemukan.`);
 }
-
+}
         btnLookup.addEventListener('click', () => {
             if(manualBarcode.value.trim() !== "") handleProductLookup(manualBarcode.value);
         });
