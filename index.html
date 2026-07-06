@@ -180,6 +180,76 @@
             background: #b91c1c;
             transform: scale(1.05);
         }
+
+        /* --- STYLE FOOTER (CREDIT) --- */
+.custom-footer {
+  background-color: #1a1a1a; /* Warna gelap elegan */
+  color: #ffffff;
+  text-align: center;
+  padding: 30px 20px;
+  font-family: 'Segoe UI', sans-serif;
+  margin-top: 50px;
+}
+
+.custom-footer p {
+  margin: 0 0 15px 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+
+.author-name {
+  font-weight: bold;
+  color: #4facfe; /* Warna aksen biru muda neon */
+}
+
+.social-links a {
+  color: #aaaaaa;
+  text-decoration: none;
+  margin: 0 12px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+/* Efek hover menyala saat kursor menyentuh sosmed */
+.social-links a:hover {
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+
+/* --- STYLE TOMBOL WHATSAPP MENGAMBANG --- */
+.wa-floating {
+  position: fixed;
+  width: 60px;
+  height: 60px;
+  bottom: 40px; /* Jarak dari bawah */
+  right: 40px;  /* Jarak dari kanan */
+  background-color: #25d366; /* Warna khas WhatsApp */
+  color: #fff;
+  border-radius: 50px;
+  text-align: center;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+/* Ukuran logo SVG di dalam lingkaran */
+.wa-floating svg {
+  width: 35px;
+  height: 35px;
+  fill: #fff;
+}
+
+/* Efek interaktif saat tombol didekati kursor */
+.wa-floating:hover {
+  transform: scale(1.1); /* Tombol sedikit membesar */
+  background-color: #20ba5a;
+  box-shadow: 2px 5px 15px rgba(0, 0, 0, 0.4);
+}
+
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-indigo-50/30 font-sans min-h-screen text-gray-800">
