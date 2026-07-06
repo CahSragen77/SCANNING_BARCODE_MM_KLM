@@ -788,42 +788,42 @@
             // Abaikan error scan biasa
         }
 
-        // --- LOOKUP (SUDAH DIPERBAIKI: MENGHAPUS NOL DI DEPAN) ---
+        // --- LOOKUP (SUDAH DIPERBAIKI SCRIPT & STRUKTUR-NYA) ---
 function handleProductLookup(barcodeOrPlu) {
-  // Bersihkan input scan, hapus semua angka 0 di depan
-  const searchKey = String(barcodeOrPlu).trim().replace(/^0+/, '');
+    // Bersihkan input scan, hapus semua angka 0 di depan
+    const searchKey = String(barcodeOrPlu).trim().replace(/^0+/, '');
 
-  const product = masterData.find(item => {
-    // Ubah data database menjadi string dan hapus angka 0 di depan
-    const itemBarcode = item.barcode ? String(item.barcode).trim().replace(/^0+/, '') : '';
-    const itemPlu = item.plu ? String(item.plu).trim().replace(/^0+/, '') : '';
-    
-    // Bandingkan hasil pembersihan
-    return itemBarcode === searchKey || itemPlu === searchKey;
-  });
+    const product = masterData.find(item => {
+        // Ubah data database menjadi string dan hapus angka 0 di depan
+        const itemBarcode = item.barcode ? String(item.barcode).trim().replace(/^0+/, '') : '';
+        const itemPlu = item.plu ? String(item.plu).trim().replace(/^0+/, '') : '';
+        
+        // Bandingkan hasil pembersihan
+        return itemBarcode === searchKey || itemPlu === searchKey;
+    });
 
-  if (product) {
-    currentActiveProduct = product;
-    entryFormSection.classList.remove('hidden');
-    
-    // 1. Masukkan deskripsi, plu, dan barcode seperti biasa
-    entryDescp.innerText = product.descp || 'Tanpa Deskripsi';
-    entryPlu.innerText = product.plu || '-';
-    entryBarcode.innerText = product.barcode || '-';
-    
-    // 2. Masukkan kategori ke elemen barunya
-    entryKategori.innerText = product.kategori || 'Umum';
-    
-    // 3. Format angka harga ke Rupiah lalu masukkan ke elemen harga yang baru
-    const hargaTerformat = !isNaN(product.price1) && product.price1 !== "" 
-        ? 'Rp ' + Number(product.price1).toLocaleString('id-ID') 
-        : 'Rp 0';
-    entryHarga.innerText = hargaTerformat;
-    
-    entryFormSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-} else {
-    alert(`❌ Produk dengan Barcode/PLU "${barcodeOrPlu}" tidak ditemukan.`);
-}
+    if (product) {
+        currentActiveProduct = product;
+        entryFormSection.classList.remove('hidden');
+        
+        // 1. Masukkan deskripsi, plu, dan barcode seperti biasa
+        entryDescp.innerText = product.descp || 'Tanpa Deskripsi';
+        entryPlu.innerText = product.plu || '-';
+        entryBarcode.innerText = product.barcode || '-';
+        
+        // 2. Masukkan kategori ke elemen barunya
+        if (entryKategori) entryKategori.innerText = product.kategori || 'Umum';
+        
+        // 3. Format angka harga ke Rupiah lalu masukkan ke elemen harga yang baru
+        const hargaTerformat = !isNaN(product.price1) && product.price1 !== "" 
+            ? 'Rp ' + Number(product.price1).toLocaleString('id-ID') 
+            : 'Rp 0';
+        if (entryHarga) entryHarga.innerText = hargaTerformat;
+        
+        entryFormSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        alert(`❌ Produk dengan Barcode/PLU "${barcodeOrPlu}" tidak ditemukan.`);
+    }
 }
         btnLookup.addEventListener('click', () => {
             if(manualBarcode.value.trim() !== "") handleProductLookup(manualBarcode.value);
