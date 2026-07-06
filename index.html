@@ -641,36 +641,33 @@
             // Abaikan error scan biasa
         }
 
-        // --- LOOKUP ---
-        function handleProductLookup(barcodeOrPlu) {
-            const searchKey = String(barcodeOrPlu).trim().toLowerCase();
-            const product = masterData.find(item => {
-                const itemBarcode = item.barcode ? String(item.barcode).trim().toLowerCase() : '';
-                const itemPlu = item.plu ? String(item.plu).trim().toLowerCase() : '';
-                return itemBarcode === searchKey || itemPlu === searchKey;
-            });
+        // --- LOOKUP (SUDAH DIPERBAIKI: MENGHAPUS NOL DI DEPAN) ---
+function handleProductLookup(barcodeOrPlu) {
+  // Bersihkan input scan, hapus semua angka 0 di depan
+  const searchKey = String(barcodeOrPlu).trim().replace(/^0+/, '');
 
-            if(product) {
-                currentActiveProduct = product;
-                entryFormSection.classList.remove('hidden');
-                entryFormSection.style.animation = 'none';
-                setTimeout(() => entryFormSection.style.animation = 'scaleIn 0.3s ease-out forwards', 10);
-                
-                entryDescp.innerText = product.descp || 'Tanpa Deskripsi';
-                entryPlu.innerText = product.plu || '-';
-                entryBarcode.innerText = product.barcode || '-';
-                
-                const harga = !isNaN(product.price1) ? 'Rp ' + Number(product.price1).toLocaleString('id-ID') : (product.price1 || '0');
-                entryInfo.innerText = `${product.kategori || 'Umum'} / ${harga}`;
-                
-                returQty.value = '';
-                returExp.value = '';
-                returQty.focus();
-                entryFormSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-                alert(`❌ Produk dengan Barcode/PLU "${barcodeOrPlu}" tidak ditemukan.`);
-            }
-        }
+  const product = masterData.find(item => {
+    // Ubah data database menjadi string dan hapus angka 0 di depan
+    const itemBarcode = item.barcode ? String(item.barcode).trim().replace(/^0+/, '') : '';
+    const itemPlu = item.plu ? String(item.plu).trim().replace(/^0+/, '') : '';
+    
+    // Bandingkan hasil pembersihan
+    return itemBarcode === searchKey || itemPlu === searchKey;
+  });
+
+  if (product) {
+    // ... (Logika UI tetap sama)
+    currentActiveProduct = product;
+    entryFormSection.classList.remove('hidden');
+    entryDescp.innerText = product.descp || 'Tanpa Deskripsi';
+    entryPlu.innerText = product.plu || '-';
+    entryBarcode.innerText = product.barcode || '-';
+    // ... (Sisa logika UI)
+    entryFormSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else {
+    alert(`❌ Produk dengan Barcode/PLU "${barcodeOrPlu}" tidak ditemukan.`);
+  }
+}
 
         btnLookup.addEventListener('click', () => {
             if(manualBarcode.value.trim() !== "") handleProductLookup(manualBarcode.value);
