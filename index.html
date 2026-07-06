@@ -801,17 +801,26 @@ function handleProductLookup(barcodeOrPlu) {
   });
 
   if (product) {
-    // ... (Logika UI tetap sama)
     currentActiveProduct = product;
     entryFormSection.classList.remove('hidden');
+    
+    // 1. Masukkan deskripsi, plu, dan barcode seperti biasa
     entryDescp.innerText = product.descp || 'Tanpa Deskripsi';
     entryPlu.innerText = product.plu || '-';
     entryBarcode.innerText = product.barcode || '-';
-    // ... (Sisa logika UI)
+    
+    // 2. Masukkan kategori ke elemen barunya
+    entryKategori.innerText = product.kategori || 'Umum';
+    
+    // 3. Format angka harga ke Rupiah lalu masukkan ke elemen harga yang baru
+    const hargaTerformat = !isNaN(product.price1) && product.price1 !== "" 
+        ? 'Rp ' + Number(product.price1).toLocaleString('id-ID') 
+        : 'Rp 0';
+    entryHarga.innerText = hargaTerformat;
+    
     entryFormSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  } else {
+} else {
     alert(`❌ Produk dengan Barcode/PLU "${barcodeOrPlu}" tidak ditemukan.`);
-  }
 }
 
         btnLookup.addEventListener('click', () => {
