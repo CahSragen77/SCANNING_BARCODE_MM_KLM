@@ -1,0 +1,183 @@
+/* style.css */
+/* ======================== */
+/* Animasi & Gaya Tambahan  */
+/* ======================== */
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+.animate-slide-in { animation: slideIn 0.4s ease-out forwards; }
+.animate-scale-in { animation: scaleIn 0.3s ease-out forwards; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.btn-glow {
+    transition: all 0.3s ease;
+}
+.btn-glow:hover {
+    animation: pulseGlow 1.5s infinite;
+}
+
+#reader-dashboard {
+    width: 100% !important;
+    border: none !important;
+    background: #111827;
+    position: relative;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+#reader-dashboard video {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
+    border-radius: 0.75rem;
+}
+
+.scan-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid rgba(99, 102, 241, 0.5);
+    border-radius: 0.75rem;
+    pointer-events: none;
+    animation: pulseGlow 2s infinite;
+}
+
+.row-hover {
+    transition: all 0.2s ease;
+}
+.row-hover:hover {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.05) 0%, transparent 100%);
+    transform: scale(1.01);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: #818cf8; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+
+.table-wrapper {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+.glass-effect {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.camera-error-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    text-align: center;
+}
+.camera-error-box .retry-btn {
+    background: #dc2626;
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 9999px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 0.5rem;
+}
+.camera-error-box .retry-btn:hover {
+    background: #b91c1c;
+    transform: scale(1.05);
+}
+
+.custom-footer {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    text-align: center;
+    padding: 30px 20px;
+    font-family: 'Segoe UI', sans-serif;
+    margin-top: 50px;
+    width: 100%;
+}
+.custom-footer p { margin: 0 0 15px 0; font-size: 0.95rem; letter-spacing: 0.5px; }
+.author-name { font-weight: bold; color: #4facfe; }
+.social-links a {
+    color: #aaaaaa;
+    text-decoration: none;
+    margin: 0 12px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+.social-links a:hover {
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+.wa-floating {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    bottom: 40px;
+    right: 40px;
+    background-color: #25d366;
+    color: #fff;
+    border-radius: 50px;
+    text-align: center;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+.wa-floating svg { width: 35px; height: 35px; fill: #fff; }
+.wa-floating:hover {
+    transform: scale(1.1);
+    background-color: #20ba5a;
+    box-shadow: 2px 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
