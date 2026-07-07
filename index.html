@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://unpkg.com" type="text/javascript"></script>
     <style>
         /* Animasi & Gaya tambahan (sama seperti sebelumnya) */
         @keyframes fadeInUp {
@@ -321,9 +322,89 @@
   box-shadow: 2px 5px 15px rgba(0, 0, 0, 0.4);
 }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #reader {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #ddd;
+            background: #000;
+        }
+        .result-box {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #eef9f5;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            display: none;
+            word-wrap: break-word;
+        }
+        .result-box h3 {
+            margin: 0 0 8px 0;
+            color: #155724;
+        }
+        #scanned-result {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1b5e20;
+        }
+        .btn-reset {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn-reset:hover {
+            background-color: #0056b3;
+        }
+
+        
+
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-indigo-50/30 font-sans min-h-screen text-gray-800">
+
+    <div class="container">
+    <h1>Pemindai Barcode / QR Code</h1>
+    
+    <!-- Area Pemindai Kamera -->
+    <div id="reader"></div>
+    
+    <!-- Kotak Menampilkan Hasil Teks -->
+    <div id="result-container" class="result-box">
+        <h3>Hasil Pemindaian:</h3>
+        <p id="scanned-result"></p>
+        <button class="btn-reset" onclick="restartScanner()">Pindai Lagi</button>
+    </div>
+</div>
+    
 
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in-up">
         
@@ -946,6 +1027,50 @@ function handleProductLookup(barcodeOrPlu) {
                 location.reload();
             }
         });
+
+
+        let html5QrcodeScanner;
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Menghentikan scanner setelah berhasil membaca kode
+        html5QrcodeScanner.clear().then(() => {
+            // Menampilkan container hasil
+            document.getElementById('result-container').style.display = 'block';
+            // Memasukkan teks hasil scan ke elemen HTML
+            document.getElementById('scanned-result').innerText = decodedText;
+            console.log(`Scan sukses: ${decodedText}`, decodedResult);
+        }).catch(error => {
+            console.error("Gagal menghentikan scanner: ", error);
+        });
+    }
+
+    function onScanFailure(error) {
+        // Kegagalan scan biasa terjadi setiap frame jika tidak ada barcode terdeteksi
+        // Log ini opsional agar tidak memenuhi konsol browser
+    }
+
+    function initScanner() {
+        // Inisialisasi scanner pada elemen dengan id 'reader'
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { 
+                fps: 15,          // Frame per detik jalannya pemindaian
+                qrbox: { width: 250, height: 150 }, // Kotak fokus disesuaikan untuk barcode panjang
+                aspectRatio: 1.777778 // Rasio layar 16:9
+            },
+            /* verbose= */ false
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    }
+
+    function restartScanner() {
+        // Menyembunyikan kotak hasil dan mengulang scanner
+        document.getElementById('result-container').style.display = 'none';
+        initScanner();
+    }
+
+    // Menjalankan pemindai saat halaman selesai dimuat
+    window.addEventListener('DOMContentLoaded', initScanner);
     </script>
 
     
