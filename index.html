@@ -886,6 +886,176 @@
 
     </script>
 
+    <!-- ============================================================ -->
+<!-- TAMBAHAN SCRIPT UNTUK SAVE KE GOOGLE SHEETS (CLOUD) -->
+<!-- ============================================================ -->
+<script>
+    // --- GANTI DENGAN URL WEB APP DARI GOOGLE APPS SCRIPT MAS BRO ---
+    // CARA BUATNYA: 
+    // 1. Buat Google Apps Script di spreadsheet yang sama.
+    // 2. Buat fungsi doPost(e) untuk menerima data JSON.
+    // 3. Deploy sebagai Web App (execute as "me", access "Anyone").
+    // 4. Copy URL-nya dan tempel di sini.
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfy.../exec"; 
+
+    // --- FUNGSI BARU UNTUK SAVE DATA ---
+    async function saveReturToCloud(returData) {
+        if (WEB_APP_URL === "https://script.google.com/macros/s/AKfy.../exec") {
+            console.warn("⚠️ Web App URL belum diisi. Data hanya tersimpan lokal.");
+            return false;
+        }
+
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Agar tidak terkena CORS saat testing
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action: 'saveRetur', data: returData })
+            });
+
+            // Karena mode 'no-cors', kita tidak bisa baca response-nya.
+            // Tapi fetch akan tetap mengirim data.
+            console.log('📤 Data retur dikirim ke cloud (Google Sheets).');
+            return true;
+        } catch (error) {
+            console.error('❌ Gagal menyimpan ke cloud:', error);
+            return false;
+        }
+    }
+
+
+    // Google Apps Script - Code.gs
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+    
+    if (action === 'saveRetur') {
+      const returItem = data.data;
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Data Retur');
+      
+      // Jika sheet belum ada, buat baru
+      if (!sheet) {
+        const newSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('Data Retur');
+        newSheet.appendRow(['Timestamp', 'PLU', 'Barcode', 'Deskripsi', 'Qty Retur', 'Tanggal Expired']);
+      }
+      
+      // Append data ke sheet
+      sheet.appendRow([
+        returItem.timestamp || new Date().toISOString(),
+        returItem.plu,
+        returItem.barcode,
+        returItem.descp,
+        returItem.qty_retur,
+        returItem.tgl_expired
+      ]);
+      
+      return ContentService.createTextOutput(JSON.stringify({ status: 'success' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+  } catch (e) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: e.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+    // --- MODIFIKASI TOMBOL SAVE ENTRY ---
+    // Ambil tombol yang sudah ada
+    const originalBtnSave = document.getElementById('btn-save-entry');
+
+    // Simpan fungsi asli ke variabel baru
+    const originalSaveHandler = btnSaveEntry._listeners ? btnSaveEntry._listeners['click'] : null;
+
+    // Bungkus dengan fungsi baru
+    btnSaveEntry.addEventListener('click', async function(e) {
+        // Cegah agar tidak menjalankan dua kali jika ada listener lain
+        // Tapi di sini kita akan override logikanya sedikit.
+
+        // Ambil data dari form sama seperti sebelumnya
+        const qty = parseInt(returQty.value);
+        const expiredDate = returExp.value;
+
+        if(!qty || qty <= 0) { 
+            alert('⚠️ Isi Qty minimal 1!'); 
+            returQty.focus(); 
+            return; 
+        }
+        if(!expiredDate) { 
+            alert('⚠️ Isi tanggal kedaluwarsa!'); 
+            returExp.focus();
+            return; 
+        }
+
+        // Siapkan objek data retur
+        const newReturItem = {
+            plu: currentActiveProduct?.plu || '-',
+            barcode: currentActiveProduct?.barcode || '-',
+            descp: currentActiveProduct?.descp || '-',
+            qty_retur: qty,
+            tgl_expired: expiredDate,
+            timestamp: new Date().toISOString()
+        };
+
+        // 1. Tambahkan ke daftar lokal (seperti sebelumnya)
+        returList.push(newReturItem);
+        renderReturTable();
+
+        // 2. SIMPAN KE CLOUD (Google Sheets)
+        const saveStatus = await saveReturToCloud(newReturItem);
+        if (saveStatus) {
+            console.log('✅ Data retur berhasil disimpan ke cloud.');
+        } else {
+            console.warn('⚠️ Data hanya tersimpan di lokal (gagal cloud).');
+        }
+
+        // Reset form
+        entryFormSection.classList.add('hidden');
+        manualBarcode.value = '';
+        currentActiveProduct = null;
+        
+        const saveBtn = btnSaveEntry;
+        saveBtn.textContent = '✅ Tersimpan!';
+        setTimeout(() => saveBtn.innerHTML = '✚ Tambahkan ke Daftar', 1500);
+    });
+
+    // Catatan: Hapus event listener bawaan jika ada, biar tidak dobel.
+    // Cara paling aman: kosongkan fungsi onclick di HTML, atau 
+    // jalankan kode ini di console setelah halaman load.
+    console.log("🔄 Script tambahan untuk cloud siap!");
+
+    // --- TAMBAHAN: TOMBOL SYNC KE CLOUD MANUAL ---
+    // Opsional: Tambahkan tombol untuk mengirim semua data retur yang sudah terkumpul ke cloud.
+    function addSyncAllButton() {
+        const headerDiv = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
+        if (headerDiv) {
+            const syncBtn = document.createElement('button');
+            syncBtn.id = 'btn-sync-cloud';
+            syncBtn.className = 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white px-5 py-2 rounded-full text-xs font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center gap-2 btn-glow';
+            syncBtn.innerHTML = '☁️ Sync ke Cloud';
+            syncBtn.onclick = async function() {
+                if (returList.length === 0) {
+                    alert('Tidak ada data retur untuk disync.');
+                    return;
+                }
+                let successCount = 0;
+                for (const item of returList) {
+                    const status = await saveReturToCloud(item);
+                    if (status) successCount++;
+                }
+                alert(`✅ ${successCount} dari ${returList.length} data berhasil disync ke cloud.`);
+            };
+            headerDiv.appendChild(syncBtn);
+        }
+    }
+
+    // Jalankan setelah DOM siap
+    document.addEventListener('DOMContentLoaded', addSyncAllButton);
+</script>
+
+    
     <!-- Tombol WhatsApp Mengambang -->
     <a href="https://wa.me/6281389188903?text=Assalamu'alaikum%20Mas%20Bro...%20Nongki-Nongki%20sambil%20ngobrol%20bisnis%20yuk%20hehehe..." class="wa-floating" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" xmlns="http://w3.org">
