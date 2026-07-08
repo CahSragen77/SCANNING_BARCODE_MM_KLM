@@ -3,7 +3,7 @@
 // KONFIGURASI: GANTI DENGAN ID GOOGLE SHEETS KAMU
 // =================================================================
 const SPREADSHEET_ID = "18aui0vuuOVN4nxmLmUHqqe-y4PSrsr9ezfn7qjuOhb8";
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw8YU-8V_aKOnjgFFocWNlsyzAGgJgCkW_fTtGnHuPJpA5qMOaLS7B16vls0upOfcyS/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwREXUsIuYRLCJjY1kwY_YR3fmjFOx-_WTZh1_PBjlUyunFD-BYvak2jbgQSe3RRj5P/exec";
 
 // =================================================================
 // STATE APLIKASI
@@ -53,11 +53,11 @@ function checkProtocol() {
         warningMsg.innerHTML = `
             <strong>⚠️ Akses Kamera Diblokir</strong><br>
             <p class="text-sm mt-1">Browser memblokir kamera karena situs diakses melalui <strong>HTTP</strong>.<br>
-            Silakan akses melalui <strong>HTTPS</strong> (misal: GitHub Pages, Vercel, Netlify) agar kamera berfungsi.</p>
+            Silakan access melalui <strong>HTTPS</strong> (misal: GitHub Pages, Vercel, Netlify) agar kamera berfungsi.</p>
             <p class="text-xs mt-2 text-gray-600">Untuk pengujian lokal, gunakan <strong>localhost</strong>.</p>
         `;
         const readerDiv = document.getElementById('reader-dashboard');
-        readerDiv.parentNode.insertBefore(warningMsg, readerDiv);
+        if (readerDiv) readerDiv.parentNode.insertBefore(warningMsg, readerDiv);
         cameraStatusMsg.innerHTML = `
             <span class="text-4xl mb-2">🔒</span>
             <span class="font-bold">Kamera Tidak Tersedia</span>
@@ -164,8 +164,6 @@ function prosesDataSukses(rawData, sumber) {
 // =====================================================
 // SCANNER UNTUK DASHBOARD (DENGAN TOMBOL START)
 // =====================================================
-
-// Tampilkan instruksi untuk menekan tombol
 function startDashboardScanner() {
     cameraStatusMsg.innerHTML = `
         <span class="text-4xl mb-2">📱</span>
@@ -176,9 +174,7 @@ function startDashboardScanner() {
     console.log('📱 Siap scan. Tekan tombol "Mulai Scan" di bawah.');
 }
 
-// Fungsi untuk tombol "Mulai Scan"
 document.getElementById('btn-start-scanner')?.addEventListener('click', function() {
-    // Hentikan scanner yang sedang berjalan (jika ada)
     if (dashboardScanner) {
         try {
             dashboardScanner.stop().catch(() => {});
@@ -257,7 +253,7 @@ function startDashboardScannerWithRetry() {
 function showCameraError(errorMessage) {
     isScannerActive = false;
     const readerDiv = document.getElementById('reader-dashboard');
-    readerDiv.style.display = 'none';
+    if (readerDiv) readerDiv.style.display = 'none';
     
     cameraStatusMsg.innerHTML = `
         <span class="text-4xl mb-2">🚫</span>
@@ -270,9 +266,9 @@ function showCameraError(errorMessage) {
     `;
     cameraStatusMsg.style.display = 'flex';
 
-    document.getElementById('retry-camera-btn').addEventListener('click', function() {
+    document.getElementById('retry-camera-btn')?.addEventListener('click', function() {
         const readerDiv = document.getElementById('reader-dashboard');
-        readerDiv.style.display = 'block';
+        if (readerDiv) readerDiv.style.display = 'block';
         cameraStatusMsg.innerHTML = `
             <span class="text-4xl mb-2">📷</span>
             <span>Mengaktifkan kamera...</span>
@@ -286,9 +282,7 @@ function onScanSuccess(decodedText) {
     if (navigator.vibrate) navigator.vibrate(100);
 }
 
-function onScanFailure(error) {
-    // Abaikan error scan biasa
-}
+function onScanFailure(error) {}
 
 // =====================================================
 // LOOKUP PRODUK & FUNGSI LAINNYA
@@ -341,9 +335,66 @@ btnCancelEntry.addEventListener('click', () => {
 // MANAJEMEN RETUR
 // =====================================================
 
-btnSaveEntry.addEventListener('click',
+// --- 4. DATA ENTRY: SIMPAN ITEM & OTOMATIS SINKRON KE CLOUD ---
+btnSaveEntry.addEventListener('click', () => {
+    const qty = parseInt(returQty.value);
+    const expiredDate = returExp.value;
+
+    if(!qty || qty <= 0) { alert('Isi Qty minimal 1!'); returQty.focus(); return; }
+    if(!expiredDate) { alert('Isi tanggal kedaluwarsa!'); returExp.focus(); return; }
+
+    // Membungkus muatan data
+    const itemRetur = {
+        plu: currentActiveProduct.plu,
+        barcode: currentActiveProduct.barcode,
+        descp: currentActiveProduct.descp,
+        qty_retur: qty,
+        tgl_expired: expiredDate,
+        timestamp: new Date().toISOString()
+    };
+
+    // 1. Simpan ke dalam array lokal antrean aplikasi
+    returList.push(itemRetur);
+    renderReturTable();
+
+    // Ubah status tombol penanda proses
+    const originalBtnText = btnSaveEntry.innerText;
+    btnSaveEntry.innerText = "Mengirim ke Sheets...";
+    btnSaveEntry.disabled = true;
+
+    // 2. UTAMA: Panggil kurir FETCH dengan menyamakan struktur payload Apps Script backend
+    fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: 'saveRetur', data: itemRetur }),
+        headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+        }
+    })
+    .then(res => res.json())
+    .then(response => {
+        if(response.status === "success") {
+            console.log("Data berhasil masuk ke Google Sheets!");
+        } else {
+            alert("Aplikasi mencatat lokal, tapi gagal sinkron ke Sheets: " + response.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Gagal otomatis sinkron ke Google Sheets (Kendala Jaringan). Namun data tetap tersimpan di tabel bawah aplikasi.");
+    })
+    .finally(() => {
+        btnSaveEntry.innerText = originalBtnText;
+        btnSaveEntry.disabled = false;
+        
+        entryFormSection.classList.add('hidden');
+        manualBarcode.value = '';
+        currentActiveProduct = null;
+    });
+});
+
+// --- RENDER VISUAL TABEL KERJA ---
 function renderReturTable() {
-    returCount.textContent = returList.length;
+    if (returCount) returCount.textContent = returList.length;
     
     if(returList.length === 0) {
         returTableBody.innerHTML = `
@@ -382,14 +433,14 @@ function renderReturTable() {
     });
 }
 
-// Fungsi deleteReturItem harus global karena dipanggil dari HTML (onclick)
+// Fungsi hapus global
 window.deleteReturItem = function(index) { 
     returList.splice(index, 1); 
     renderReturTable(); 
 };
 
 // =====================================================
-// EKSPORT EXCEL
+// EKSPORT EXCEL MANUAL
 // =====================================================
 btnExport.addEventListener('click', () => {
     if(returList.length === 0) return;
@@ -411,14 +462,9 @@ btnExport.addEventListener('click', () => {
 });
 
 // =====================================================
-// FUNGSI CLOUD (SAVE KE GOOGLE SHEETS)
+// FUNGSI CLOUD (SAVE KE GOOGLE SHEETS CADANGAN)
 // =====================================================
 async function saveReturToCloud(returData) {
-    if (WEB_APP_URL === "https://script.google.com/macros/s/AKfy.../exec") {
-        console.warn("⚠️ Web App URL belum diisi. Data hanya tersimpan lokal.");
-        return false;
-    }
-
     try {
         const response = await fetch(WEB_APP_URL, {
             method: 'POST',
@@ -428,8 +474,6 @@ async function saveReturToCloud(returData) {
             },
             body: JSON.stringify({ action: 'saveRetur', data: returData })
         });
-
-        console.log('📤 Data retur dikirim ke cloud (Google Sheets).');
         return true;
     } catch (error) {
         console.error('❌ Gagal menyimpan ke cloud:', error);
@@ -438,7 +482,7 @@ async function saveReturToCloud(returData) {
 }
 
 // =====================================================
-// TOMBOL SYNC KE CLOUD (MANUAL)
+// TOMBOL SYNC MANUAL KE CLOUD
 // =====================================================
 function addSyncAllButton() {
     const headerDiv = document.querySelector('header .flex.items-center.gap-3.flex-wrap');
@@ -457,7 +501,7 @@ function addSyncAllButton() {
                 const status = await saveReturToCloud(item);
                 if (status) successCount++;
             }
-            alert(`✅ ${successCount} dari ${returList.length} data berhasil disync ke cloud.`);
+            alert(`✅ Sinkronisasi massal selesai.`);
         };
         headerDiv.appendChild(syncBtn);
     }
@@ -473,55 +517,11 @@ btnClearAll.addEventListener('click', () => {
 });
 
 // =====================================================
-// INISIALISASI
+// INISIALISASI HALAMAN
 // =====================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Mulai scanner (hanya menampilkan instruksi)
     startDashboardScanner();
-    
-    // Tambahkan tombol sync
     addSyncAllButton();
-    
-    console.log("🔄 Script utama siap!");
+    renderReturTable(); // Inisialisasi visual tabel kosong
+    console.log("🔄 Script utama telah diperbaiki sempurna!");
 });
-
-// =====================================================
-// CATATAN: Kode Google Apps Script (doPost) TETAP di Apps Script
-// =====================================================
-// Kode di bawah ini TIDAK perlu dipindahkan ke script.js.
-// Kode ini adalah backend yang berjalan di Google Apps Script.
-// Simpan kode ini di editor Apps Script, bukan di file HTML/JS.
-/*
-function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-    const action = data.action;
-    
-    if (action === 'saveRetur') {
-      const returItem = data.data;
-      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Data Retur');
-      
-      if (!sheet) {
-        const newSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('Data Retur');
-        newSheet.appendRow(['Timestamp', 'PLU', 'Barcode', 'Deskripsi', 'Qty Retur', 'Tanggal Expired']);
-      }
-      
-      sheet.appendRow([
-        returItem.timestamp || new Date().toISOString(),
-        returItem.plu,
-        returItem.barcode,
-        returItem.descp,
-        returItem.qty_retur,
-        returItem.tgl_expired
-      ]);
-      
-      return ContentService.createTextOutput(JSON.stringify({ status: 'success' }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-  } catch (e) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: e.message }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-*/
