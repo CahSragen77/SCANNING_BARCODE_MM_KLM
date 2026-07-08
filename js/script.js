@@ -341,55 +341,7 @@ btnCancelEntry.addEventListener('click', () => {
 // MANAJEMEN RETUR
 // =====================================================
 
-// Event listener untuk tombol save (sudah dimodifikasi untuk cloud)
-btnSaveEntry.addEventListener('click', async function(e) {
-    const qty = parseInt(returQty.value);
-    const expiredDate = returExp.value;
-
-    if(!qty || qty <= 0) { 
-        alert('⚠️ Isi Qty minimal 1!'); 
-        returQty.focus(); 
-        returQty.style.borderColor = '#ef4444';
-        setTimeout(() => returQty.style.borderColor = '', 2000);
-        return; 
-    }
-    if(!expiredDate) { 
-        alert('⚠️ Isi tanggal kedaluwarsa!'); 
-        returExp.focus();
-        returExp.style.borderColor = '#ef4444';
-        setTimeout(() => returExp.style.borderColor = '', 2000);
-        return; 
-    }
-
-    const newReturItem = {
-        plu: currentActiveProduct?.plu || '-',
-        barcode: currentActiveProduct?.barcode || '-',
-        descp: currentActiveProduct?.descp || '-',
-        qty_retur: qty,
-        tgl_expired: expiredDate,
-        timestamp: new Date().toISOString()
-    };
-
-    returList.push(newReturItem);
-    renderReturTable();
-
-    // Simpan ke cloud
-    const saveStatus = await saveReturToCloud(newReturItem);
-    if (saveStatus) {
-        console.log('✅ Data retur berhasil disimpan ke cloud.');
-    } else {
-        console.warn('⚠️ Data hanya tersimpan di lokal (gagal cloud).');
-    }
-
-    entryFormSection.classList.add('hidden');
-    manualBarcode.value = '';
-    currentActiveProduct = null;
-    
-    const saveBtn = btnSaveEntry;
-    saveBtn.textContent = '✅ Tersimpan!';
-    setTimeout(() => saveBtn.innerHTML = '✚ Tambahkan ke Daftar', 1500);
-});
-
+btnSaveEntry.addEventListener('click',
 function renderReturTable() {
     returCount.textContent = returList.length;
     
